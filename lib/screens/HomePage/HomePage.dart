@@ -151,6 +151,7 @@ class _HomePageState extends State<HomePage> {
                                       var subDiaries = getPDiaries[index]['subdiaries'];
                                       var parentId = diary?['menues_id'];
                                       var menuesName = diary?['menues_name'];
+                                      var mainParentId = diary?['parent_id'];
 
                                       if (!expansionStates.containsKey(parentId)) {
                                         expansionStates[parentId] = false;
@@ -161,7 +162,7 @@ class _HomePageState extends State<HomePage> {
                                         index: index,
                                         child: Column(
                                           children: [
-                                            buildDiaryItem(diary!, hasChildren, hasAudio, parentId, menuesName, 0),
+                                            buildDiaryItem(diary!, hasChildren, hasAudio, parentId, menuesName, 0, mainParentId),
                                             Visibility(
                                               visible: expansionStates[parentId]! && hasChildren == true,
                                               child: buildNestedSubDiaries(subDiaries, 1),
@@ -458,7 +459,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildDiaryItem(Map<String, dynamic> diary, var children, var hasAudio,
-      int parentId, String menuesName,  int indentationLevel) {
+      int parentId, String menuesName,  int indentationLevel, var mainParentId) {
     Color itemColor = parentId == selectedIndex
         ? const Color(0xFF05425c)
         : const Color(0xFF9EC2D2);
@@ -467,8 +468,6 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           selectedMenuesName = menuesName;
           selectedIndex = parentId;
-          // expansionStates[diary['menues_id']] =
-          // !(expansionStates[diary['menues_id']] ?? false);
           debugPrint(selectedIndex.toString());
           debugPrint(selectedMenuesName.toString());
         });
@@ -548,6 +547,7 @@ class _HomePageState extends State<HomePage> {
                   ),
               ],
             ),
+            if (mainParentId == null)
             GestureDetector(
               onTap: () {},
               child: Padding(
@@ -577,6 +577,7 @@ class _HomePageState extends State<HomePage> {
                 subDiary['diary']['menues_id'],
                 subDiary['diary']['menues_name'],
                 indentationLevel,
+                subDiary['diary']['parent_id'],
               ),
             ),
             Visibility(

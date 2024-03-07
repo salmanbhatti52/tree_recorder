@@ -20,7 +20,6 @@ class DailyDiaries extends StatefulWidget {
 
 class _DailyDiariesState extends State<DailyDiaries> {
   final DiaryController controller = Get.put(DiaryController());
-
   TextEditingController textController = TextEditingController();
   TextEditingController newTextController = TextEditingController();
   TextEditingController editMenuesNameController = TextEditingController();
@@ -197,8 +196,7 @@ class _DailyDiariesState extends State<DailyDiaries> {
                         ),
                         GestureDetector(
                           onTap: () {
-                            controller.deleteMenuesData(
-                                widget.menuesId!.toInt(), context);
+                            controller.deleteMenuesData(widget.menuesId!.toInt(), context);
                           },
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -245,10 +243,8 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                       onTap: () {
                                         debugPrint("Second");
                                         controller.textFieldValueFalse();
-                                        controller.text.value =
-                                            newTextController.text.toString();
-                                        controller.addDailyDiary(
-                                            widget.menuesId!.toInt());
+                                        controller.text.value = newTextController.text.toString();
+                                        controller.addDailyDiary(widget.menuesId!.toInt());
                                         newTextController.clear();
                                       },
                                       child: const Icon(
@@ -294,9 +290,7 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                         debugPrint(
                                             "textController ${textController.text.toString()}");
                                         controller.editTextFalse();
-                                        controller.editText(
-                                            widget.menuesId!.toInt(),
-                                            textController.text.toString());
+                                        controller.editText(widget.menuesId!.toInt(), textController.text.toString());
                                         textController.clear();
                                       },
                                       child: const Icon(
@@ -387,9 +381,7 @@ class _DailyDiariesState extends State<DailyDiaries> {
                               final menuesData = diary["menues_data"];
                               final menuesDataId = diary["menues_data_id"];
                               if (dataType == "audio") {
-                                _initAudioPlayer(
-                                    'https://tree.eigix.net/public/$menuesData',
-                                    menuesDataId);
+                                _initAudioPlayer('https://tree.eigix.net/public/$menuesData', menuesDataId);
                               }
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -409,25 +401,13 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                                     children: [
                                                       GestureDetector(
                                                         onTap: () {
-                                                          controller
-                                                              .editTextTrue();
-                                                          if (controller
-                                                              .editTexts
-                                                              .value) {
-                                                            textController
-                                                                    .text =
-                                                                menuesData;
-                                                            controller
-                                                                    .menuesDataID =
-                                                                menuesDataId;
-                                                            debugPrint(
-                                                                textController
-                                                                    .text);
-                                                            debugPrint(
-                                                                menuesDataId
-                                                                    .toString());
-                                                            debugPrint(dataType
-                                                                .toString());
+                                                          controller.editTextTrue();
+                                                          if (controller.editTexts.value) {
+                                                            textController.text = menuesData;
+                                                            controller.menuesDataID = menuesDataId;
+                                                            debugPrint(textController.text);
+                                                            debugPrint(menuesDataId.toString());
+                                                            debugPrint(dataType.toString());
                                                           }
                                                         },
                                                         child: SvgPicture.asset(
@@ -441,17 +421,9 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                                       GestureDetector(
                                                         onTap: () {
                                                           setState(() {
-                                                            controller
-                                                                    .selectedIndex =
-                                                                menuesDataId;
-                                                            debugPrint(
-                                                                "menuesDataId ${controller.selectedIndex}");
-                                                            controller
-                                                                .deleteSpecificMenuesData(
-                                                                    widget
-                                                                        .menuesId!
-                                                                        .toInt(),
-                                                                    context);
+                                                            controller.selectedIndex = menuesDataId;
+                                                            debugPrint("menuesDataId ${controller.selectedIndex}");
+                                                            controller.deleteSpecificMenuesData(widget.menuesId!.toInt(), context);
                                                           });
                                                         },
                                                         child: SvgPicture.asset(
@@ -486,38 +458,21 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                                               15.0),
                                                       child: Image.network(
                                                         'https://tree.eigix.net/public/$menuesData',
-                                                        errorBuilder:
-                                                            (BuildContext
-                                                                    context,
-                                                                Object
-                                                                    exception,
-                                                                StackTrace?
-                                                                    stackTrace) {
-                                                          return Image.asset(
-                                                              'assets/images/fade_in_image.jpeg');
+                                                        errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                                                          return Image.asset('assets/images/fade_in_image.jpeg');
                                                         },
                                                         loadingBuilder:
-                                                            (BuildContext
-                                                                    context,
-                                                                Widget child,
-                                                                ImageChunkEvent?
-                                                                    loadingProgress) {
-                                                          if (loadingProgress ==
-                                                              null) {
+                                                            (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                                          if (loadingProgress == null) {
                                                             return child;
                                                           }
                                                           return Center(
                                                             child:
                                                                 CircularProgressIndicator(
-                                                              color: AppColor
-                                                                  .primaryColor,
-                                                              value: loadingProgress
-                                                                          .expectedTotalBytes !=
-                                                                      null
-                                                                  ? loadingProgress
-                                                                          .cumulativeBytesLoaded /
-                                                                      loadingProgress
-                                                                          .expectedTotalBytes!
+                                                              color: AppColor.primaryColor,
+                                                              value: loadingProgress.expectedTotalBytes != null
+                                                                  ? loadingProgress.cumulativeBytesLoaded /
+                                                                      loadingProgress.expectedTotalBytes!
                                                                   : null,
                                                             ),
                                                           );
@@ -530,17 +485,9 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                                       child: GestureDetector(
                                                         onTap: () {
                                                           setState(() {
-                                                            controller
-                                                                    .selectedIndex =
-                                                                menuesDataId;
-                                                            debugPrint(
-                                                                "menuesDataId ${controller.selectedIndex}");
-                                                            controller
-                                                                .deleteSpecificMenuesData(
-                                                                    widget
-                                                                        .menuesId!
-                                                                        .toInt(),
-                                                                    context);
+                                                            controller.selectedIndex = menuesDataId;
+                                                            debugPrint("menuesDataId ${controller.selectedIndex}");
+                                                            controller.deleteSpecificMenuesData(widget.menuesId!.toInt(), context);
                                                           });
                                                         },
                                                         child: SvgPicture.asset(
@@ -553,17 +500,13 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                               )
                                             : dataType == "audio"
                                                 ? Container(
-                                                    // width: Get.width * 0.7,
                                                     height: 68,
                                                     decoration: BoxDecoration(
                                                       color: Colors.white,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6),
+                                                      borderRadius: BorderRadius.circular(6),
                                                       boxShadow: const [
                                                         BoxShadow(
-                                                          color:
-                                                              Color(0x1405425C),
+                                                          color: Color(0x1405425C),
                                                           blurRadius: 6,
                                                           offset: Offset(0, 0),
                                                           spreadRadius: 0,
@@ -571,34 +514,24 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                                       ],
                                                     ),
                                                     child: Padding(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 15.0),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 15.0),
                                                       child: Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceBetween,
+                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                         children: [
                                                           Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .center,
+                                                            mainAxisAlignment: MainAxisAlignment.center,
                                                             children: [
                                                               const MyText(
-                                                                text:
-                                                                    "Voice Note",
+                                                                text: "Voice Note",
                                                                 fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                color: AppColor
-                                                                    .blackColor,
+                                                                fontWeight: FontWeight.w500,
+                                                                color: AppColor.blackColor,
                                                               ),
                                                               Text(
                                                                 '${positionMap[menuesDataId]?.inMinutes ?? 0}:${positionMap[menuesDataId]?.inSeconds.remainder(60).toString().padLeft(2, '0') ?? '00'} / ${durationMap[menuesDataId]?.inMinutes ?? 0}:${durationMap[menuesDataId]?.inSeconds.remainder(60).toString().padLeft(2, '0') ?? '00'}',
                                                                 style: const TextStyle(
-                                                                    fontSize:
-                                                                        12), // Adjust the font size as needed
+                                                                    fontSize: 12,
+                                                                ),
                                                               ),
                                                             ],
                                                           ),
@@ -606,28 +539,16 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                                             children: [
                                                               GestureDetector(
                                                                 onTap: () {
-                                                                  // _initAudioPlayer('https://tree.eigix.net/public/$menuesData', menuesDataId);
-                                                                  playPause(
-                                                                      'https://tree.eigix.net/public/$menuesData',
-                                                                      menuesDataId);
+                                                                  playPause('https://tree.eigix.net/public/$menuesData', menuesDataId);
                                                                 },
-                                                                child: isPlayingMap[
-                                                                            menuesDataId] ==
-                                                                        true
-                                                                    ? const Icon(
-                                                                        Icons
-                                                                            .stop,
-                                                                        size:
-                                                                            25,
-                                                                        color: AppColor
-                                                                            .primaryColor,
+                                                                child: isPlayingMap[menuesDataId] == true
+                                                                    ? const Icon(Icons.stop,
+                                                                        size: 25,
+                                                                        color: AppColor.primaryColor,
                                                                       )
-                                                                    : SvgPicture
-                                                                        .asset(
-                                                                        AppAssets
-                                                                            .player,
-                                                                        width:
-                                                                            25,
+                                                                    : SvgPicture.asset(
+                                                                        AppAssets.player,
+                                                                        width: 25,
                                                                       ),
                                                               ),
                                                               const SizedBox(
@@ -636,24 +557,12 @@ class _DailyDiariesState extends State<DailyDiaries> {
                                                               GestureDetector(
                                                                 onTap: () {
                                                                   setState(() {
-                                                                    controller
-                                                                            .selectedIndex =
-                                                                        menuesDataId;
-                                                                    debugPrint(
-                                                                        "menuesDataId ${controller.selectedIndex}");
-                                                                    controller.deleteSpecificMenuesData(
-                                                                        widget
-                                                                            .menuesId!
-                                                                            .toInt(),
-                                                                        context);
+                                                                    controller.selectedIndex = menuesDataId;
+                                                                    debugPrint("menuesDataId ${controller.selectedIndex}");
+                                                                    controller.deleteSpecificMenuesData(widget.menuesId!.toInt(), context);
                                                                   });
                                                                 },
-                                                                child:
-                                                                    SvgPicture
-                                                                        .asset(
-                                                                  AppAssets
-                                                                      .trash,
-                                                                ),
+                                                                child: SvgPicture.asset(AppAssets.trash,),
                                                               ),
                                                             ],
                                                           )
@@ -758,7 +667,6 @@ class _DailyDiariesState extends State<DailyDiaries> {
             GestureDetector(
               onTap: () {
                 controller.imagePick(widget.menuesId!.toInt());
-                // controller.addDailyDiary(widget.menuesId!.toInt());
               },
               child: const Padding(
                 padding: EdgeInsets.only(left: 15.0, bottom: 25, top: 10),
@@ -784,7 +692,6 @@ class _DailyDiariesState extends State<DailyDiaries> {
             GestureDetector(
               onTap: () {
                 controller.cameraPick(widget.menuesId!.toInt());
-                // controller.addDailyDiary(widget.menuesId!.toInt());
               },
               child: const Padding(
                 padding: EdgeInsets.only(
@@ -892,7 +799,6 @@ class _DailyDiariesState extends State<DailyDiaries> {
 
   Future<void> stopRecording() async {
     try {
-      // Stop recording and get the path
       String? path = await audioRecord.stop();
       setState(() {
         controller.recordingFalse();

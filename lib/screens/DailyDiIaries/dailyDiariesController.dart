@@ -210,9 +210,13 @@ class DiaryController extends GetxController {
     String base64Audio = '';
   if (audioPath.value.isNotEmpty) {
     File audioFile = File(audioPath.value);
-    List<int> audioBytes = await audioFile.readAsBytes();
-    base64Audio = base64Encode(audioBytes);
-    debugPrint("base64Audio $base64Audio");
+    if (await audioFile.exists()) {
+      List<int> audioBytes = await audioFile.readAsBytes();
+      base64Audio = base64Encode(audioBytes);
+      debugPrint("base64Audio $base64Audio");
+    } else {
+      debugPrint("Error: Audio file does not exist at ${audioPath.value}");
+    }
   }
 
     String addDailyApiUrl = 'https://tree.eigix.net/public/api/update_diary';
@@ -223,9 +227,6 @@ class DiaryController extends GetxController {
         "users_customer_id": userID,
         "menues_id": menuesId.toString(),
         "data_type": base64Image.value.isNotEmpty ? "image" : text.value.isNotEmpty ? "text" :  base64Audio.isNotEmpty ? "audio" : "",
-        // "menues_images": base64Image.value.isNotEmpty ? base64Image.value : "",
-        // "menues_audios": base64Audio.isNotEmpty ? base64Audio : "",
-        // "menues_texts": text.value.isNotEmpty ? text.value : "",
         "menues_data": base64Image.value.isNotEmpty ? base64Image.value : text.value.isNotEmpty ? text.value  :  base64Audio.isNotEmpty ? base64Audio : "",
       },
     );
