@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -6,6 +8,7 @@ import 'package:inbetrieb/resources/appAssets.dart';
 import 'package:inbetrieb/resources/appColors.dart';
 import 'package:inbetrieb/screens/DailyDiIaries/dailyDiariesController.dart';
 import 'package:inbetrieb/widgets/Text.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -598,7 +601,8 @@ class _DailyDiariesState extends State<DailyDiaries> {
     }
 
     AudioPlayer audioPlayer = AudioPlayer();
-    await audioPlayer.setSourceUrl(url);
+    String modifiedUrl = await getCurrentUrl(url);
+    await audioPlayer.setSourceUrl(modifiedUrl);
     audioPlayer.onDurationChanged.listen((Duration duration) {
       setState(() {
         durationMap[menuesDataId] = duration;
@@ -610,6 +614,18 @@ class _DailyDiariesState extends State<DailyDiaries> {
       });
     });
     audioPlayersMap[menuesDataId] = audioPlayer;
+  }
+
+  Future<String> getCurrentUrl(String url)async{
+    if(Platform.isIOS){
+      String a = url.substring(url.indexOf("Documents/") + 10, url.length) ;
+      Directory dir = await getApplicationDocumentsDirectory();
+      a = "${dir.path}/$a";
+      return a;
+    }
+    else{
+      return url;
+    }
   }
 
   @override
@@ -800,12 +816,18 @@ class _DailyDiariesState extends State<DailyDiaries> {
   Future<void> stopRecording() async {
     try {
       String? path = await audioRecord.stop();
-      setState(() {
-        controller.recordingFalse();
-        controller.audioPath.value = path!;
-        debugPrint("audioPath ${controller.audioPath.value}");
-        controller.addDailyDiary(widget.menuesId!.toInt());
-      });
+
+      if (path != null && path.isNotEmpty) {
+        Directory tempDir = await getTemporaryDirectory();
+        File tempFile = File('${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a');
+        await File(path).rename(tempFile.path);
+        setState(() {
+          controller.recordingFalse();
+          controller.audioPath.value = tempFile.path;
+          debugPrint("audioPath ${controller.audioPath.value}");
+          controller.addDailyDiary(widget.menuesId!.toInt());
+        });
+      }
     } catch (e) {
       debugPrint('error111111: $e');
     }
@@ -823,4 +845,5 @@ class _DailyDiariesState extends State<DailyDiaries> {
       debugPrint('error111: $e');
     }
   }
+
 }

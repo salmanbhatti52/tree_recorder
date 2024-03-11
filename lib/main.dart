@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,24 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
   GetIt.instance.registerSingleton<ApiServices>(ApiServices());
+  const AudioContext audioContext = AudioContext(
+    iOS: AudioContextIOS(
+      // defaultToSpeaker: true,
+      category: AVAudioSessionCategory.ambient,
+      options: [
+        AVAudioSessionOptions.defaultToSpeaker,
+        AVAudioSessionOptions.mixWithOthers,
+      ],
+    ),
+    android: AudioContextAndroid(
+      isSpeakerphoneOn: true,
+      stayAwake: true,
+      contentType: AndroidContentType.sonification,
+      usageType: AndroidUsageType.assistanceSonification,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+  );
+  AudioPlayer.global.setAudioContext(audioContext);
   runApp(const MyApp());
 }
 
