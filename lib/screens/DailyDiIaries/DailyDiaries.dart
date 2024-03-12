@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -601,8 +600,7 @@ class _DailyDiariesState extends State<DailyDiaries> {
     }
 
     AudioPlayer audioPlayer = AudioPlayer();
-    String modifiedUrl = await getCurrentUrl(url);
-    await audioPlayer.setSourceUrl(modifiedUrl);
+    await audioPlayer.setSourceUrl(url);
     audioPlayer.onDurationChanged.listen((Duration duration) {
       setState(() {
         durationMap[menuesDataId] = duration;
@@ -614,18 +612,6 @@ class _DailyDiariesState extends State<DailyDiaries> {
       });
     });
     audioPlayersMap[menuesDataId] = audioPlayer;
-  }
-
-  Future<String> getCurrentUrl(String url)async{
-    if(Platform.isIOS){
-      String a = url.substring(url.indexOf("Documents/") + 10, url.length) ;
-      Directory dir = await getApplicationDocumentsDirectory();
-      a = "${dir.path}/$a";
-      return a;
-    }
-    else{
-      return url;
-    }
   }
 
   @override
@@ -774,7 +760,7 @@ class _DailyDiariesState extends State<DailyDiaries> {
                 Row(
                   children: [
                     Obx(
-                      () => Expanded(
+                          () => Expanded(
                         child: InkWell(
                           onTap: () {
                             if (controller.isRecording.value) {
@@ -818,12 +804,19 @@ class _DailyDiariesState extends State<DailyDiaries> {
       String? path = await audioRecord.stop();
 
       if (path != null && path.isNotEmpty) {
-        Directory tempDir = await getTemporaryDirectory();
-        File tempFile = File('${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a');
-        await File(path).rename(tempFile.path);
+        Directory? dir;
+        if (Platform.isIOS) {
+          dir = await getApplicationDocumentsDirectory();
+        } else {
+          dir = Directory("/storage/emulated/0/Download");
+          if (!await dir.exists()) dir = (await getExternalStorageDirectory())!;
+        }
+        String fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        File destinationFile = File('${dir.path}/$fileName');
+        await File(path).copy(destinationFile.path);
         setState(() {
           controller.recordingFalse();
-          controller.audioPath.value = tempFile.path;
+          controller.audioPath.value = destinationFile.path;
           debugPrint("audioPath ${controller.audioPath.value}");
           controller.addDailyDiary(widget.menuesId!.toInt());
         });
