@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:dio/dio.dart' as dio;
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -10,6 +13,8 @@ import 'package:inbetrieb/widgets/Text.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:shimmer/shimmer.dart';
+
+import 'AudioRecording.dart';
 
 class DailyDiaries extends StatefulWidget {
   final int? menuesId;
@@ -31,7 +36,6 @@ class _DailyDiariesState extends State<DailyDiaries> {
     debugPrint("menuesID ${widget.menuesId}");
     debugPrint("menuesName ${widget.menuesName}");
     editMenuesNameController = TextEditingController(text: widget.menuesName);
-    initializeAudioRecord();
     super.initState();
     controller.getDailyDiaries(widget.menuesId!.toInt());
   }
@@ -138,7 +142,12 @@ class _DailyDiariesState extends State<DailyDiaries> {
                       children: [
                         GestureDetector(
                           onTap: () {
-                            recordVoice(context);
+                            // recordVoice(context);
+                            Get.to(
+                                  () => VoiceRecorderPage(menuesId: widget.menuesId,),
+                              duration: const Duration(milliseconds: 350),
+                              transition: Transition.rightToLeft,
+                            );
                           },
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -600,17 +609,46 @@ class _DailyDiariesState extends State<DailyDiaries> {
     }
 
     AudioPlayer audioPlayer = AudioPlayer();
-    await audioPlayer.setSourceUrl(url);
+
+    try {
+      if (url.isNotEmpty) {
+        dio.Dio dioInstance = dio.Dio();
+        dio.Response<List<int>> response = await dioInstance.get<List<int>>(
+          url,
+          options: dio.Options(responseType: dio.ResponseType.bytes),
+        );
+
+        Directory? dir;
+        if (Platform.isIOS) {
+          dir = await getApplicationDocumentsDirectory();
+        } else {
+          dir = Directory("/storage/emulated/0/Download");
+          if (!await dir.exists()) dir = (await getExternalStorageDirectory())!;
+        }
+
+        String fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        File destinationFile = File('${dir.path}/$fileName');
+
+        await destinationFile.writeAsBytes(response.data!);
+        await audioPlayer.setSourceUrl(destinationFile.path);
+      }
+    } catch (e) {
+      print('Error downloading and copying file: $e');
+      // Handle error
+    }
+
     audioPlayer.onDurationChanged.listen((Duration duration) {
       setState(() {
         durationMap[menuesDataId] = duration;
       });
     });
+
     audioPlayer.onPositionChanged.listen((Duration position) {
       setState(() {
         positionMap[menuesDataId] = position;
       });
     });
+
     audioPlayersMap[menuesDataId] = audioPlayer;
   }
 
@@ -727,116 +765,5 @@ class _DailyDiariesState extends State<DailyDiaries> {
     );
   }
 
-  late Record audioRecord;
-
-  Future<void> initializeAudioRecord() async {
-    try {
-      audioRecord = Record();
-    } catch (e) {
-      debugPrint('Error initializing audioRecord: $e');
-    }
-  }
-
-  void recordVoice(context) {
-    showModalBottomSheet(
-      isDismissible: false,
-      context: context,
-      builder: (builder) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: SizedBox(
-            height: Get.height * 0.3,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SvgPicture.asset(
-                  AppAssets.audioWaves,
-                  color: AppColor.lightBlackColor,
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Row(
-                  children: [
-                    Obx(
-                          () => Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            if (controller.isRecording.value) {
-                              stopRecording();
-                              controller.recordingFalse();
-                            } else {
-                              startRecording();
-                              controller.recordingTrue();
-                            }
-                          },
-                          child: SizedBox(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  controller.isRecording.value
-                                      ? Icons.stop
-                                      : Icons.play_arrow,
-                                  size: 60,
-                                ),
-                                Text(controller.isRecording.value
-                                    ? 'Stop Recording'
-                                    : 'Start Recording')
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> stopRecording() async {
-    try {
-      String? path = await audioRecord.stop();
-
-      if (path != null && path.isNotEmpty) {
-        Directory? dir;
-        if (Platform.isIOS) {
-          dir = await getApplicationDocumentsDirectory();
-        } else {
-          dir = Directory("/storage/emulated/0/Download");
-          if (!await dir.exists()) dir = (await getExternalStorageDirectory())!;
-        }
-        String fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        File destinationFile = File('${dir.path}/$fileName');
-        await File(path).copy(destinationFile.path);
-        setState(() {
-          controller.recordingFalse();
-          controller.audioPath.value = destinationFile.path;
-          debugPrint("audioPath ${controller.audioPath.value}");
-          controller.addDailyDiary(widget.menuesId!.toInt());
-        });
-      }
-    } catch (e) {
-      debugPrint('error111111: $e');
-    }
-    Get.back();
-  }
-
-  Future<void> startRecording() async {
-    try {
-      if (await audioRecord.hasPermission()) {
-        // Start recording to file
-        await audioRecord.start();
-        controller.recordingTrue();
-      }
-    } catch (e) {
-      debugPrint('error111: $e');
-    }
-  }
-
 }
+
