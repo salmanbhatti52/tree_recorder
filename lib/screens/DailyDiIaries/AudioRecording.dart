@@ -19,16 +19,46 @@ class VoiceRecorderPage extends StatefulWidget {
 }
 
 class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
-
   late Record audioRecord;
   Timer? timer;
   int _seconds = 0;
   bool _isTimerRunning = false;
   final DiaryController controller = Get.put(DiaryController());
 
+  final StreamController<int> recordDurationController =
+      StreamController<int>.broadcast()..add(0);
+
+  Sink<int> get recordDurationInput => recordDurationController.sink;
+
+  Stream<double> get amplitudeStream => audioRecord
+      .onAmplitudeChanged(const Duration(milliseconds: 160))
+      .map((amp) => amp.current);
+
+  Stream<RecordState> get recordStateStream => audioRecord.onStateChanged();
+
+  Stream<int> get recordDurationOutput => recordDurationController.stream;
+
+  final ScrollController scrollController = ScrollController();
+  List<double> amplitude = [];
+  late StreamSubscription<double> amplitudeSubscription;
+  double waveMaxHeight = 45;
+  final double minimumAmp = -67;
+
   @override
   void initState() {
     initializeAudioRecord();
+    amplitudeSubscription = amplitudeStream.listen((amp) {
+      setState(() {
+        amplitude.add(amp);
+      });
+      if (scrollController.positions.isNotEmpty) {
+        scrollController.animateTo(
+          scrollController.position.maxScrollExtent,
+          curve: Curves.linear,
+          duration: const Duration(milliseconds: 175),
+        );
+      }
+    });
     super.initState();
   }
 
@@ -36,6 +66,8 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
   void dispose() {
     timer?.cancel();
     audioRecord.dispose();
+    recordDurationController.close();
+    amplitudeSubscription.cancel();
     super.dispose();
   }
 
@@ -98,6 +130,7 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         _seconds++;
+        recordDurationInput.add(_seconds);
       });
     });
 
@@ -113,6 +146,7 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
     setState(() {
       _seconds = 0;
       _isTimerRunning = false;
+      recordDurationInput.add(0);
     });
   }
 
@@ -155,9 +189,47 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SvgPicture.asset(
-                AppAssets.audioWaves,
-                color: AppColor.lightBlackColor,
+              // SvgPicture.asset(
+              //   AppAssets.audioWaves,
+              //   color: AppColor.lightBlackColor,
+              // ),
+              SizedBox(
+                height: waveMaxHeight,
+                child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: amplitude.length,
+                    scrollDirection: Axis.horizontal,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemExtent: 6,
+                    itemBuilder: (context, index) {
+                      double amplitudes = amplitude[index].clamp(minimumAmp+1, 0);
+                      double ampPercentage = 1 - (amplitudes / minimumAmp).abs();
+                      double waveHeight = waveMaxHeight * ampPercentage;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                        child: Center(
+                          child: TweenAnimationBuilder(
+                              tween: Tween(begin: 0, end: waveHeight),
+                              duration: const Duration(milliseconds: 100),
+                              curve: Curves.decelerate,
+                              builder: (context, animatedWaveHeight, child){
+                                return SizedBox(
+                                  height: animatedWaveHeight.toDouble(),
+                                  width: 8,
+                                  child: child,
+                                );
+                              },
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                ),
               ),
               const SizedBox(
                 height: 20,
@@ -174,7 +246,7 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
               Row(
                 children: [
                   Obx(
-                        () => Expanded(
+                    () => Expanded(
                       child: InkWell(
                         onTap: () {
                           if (controller.isRecording.value) {
