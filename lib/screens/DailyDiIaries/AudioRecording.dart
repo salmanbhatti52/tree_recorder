@@ -9,6 +9,7 @@ import 'package:inbetrieb/screens/DailyDiIaries/dailyDiariesController.dart';
 import 'package:inbetrieb/widgets/Text.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'package:path/path.dart' as path;
 
 class VoiceRecorderPage extends StatefulWidget {
   int? menuesId;
@@ -71,6 +72,24 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
     super.dispose();
   }
 
+  final String _recordDirectoryName = "record_audio";
+  String? _appDirPath;
+
+  Future<String> get _getAppDirPath async {
+    _appDirPath ??= (await getApplicationDocumentsDirectory()).path;
+    return _appDirPath!;
+  }
+
+  Future<Directory> get getRecordsDirectory async {
+    Directory recordDirectory =
+    Directory(path.join((await _getAppDirPath), _recordDirectoryName));
+
+    if (!(await recordDirectory.exists())) {
+      await recordDirectory.create();
+    }
+    return recordDirectory;
+  }
+
   Future<void> initializeAudioRecord() async {
     try {
       audioRecord = Record();
@@ -81,25 +100,30 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
 
   Future<void> stopRecording() async {
     try {
-      String? path = await audioRecord.stop();
-
-      if (path != null && path.isNotEmpty) {
-        Directory? dir;
-        if (Platform.isIOS) {
-          dir = await getApplicationDocumentsDirectory();
-        } else {
-          dir = Directory("/storage/emulated/0/Download");
-          if (!await dir.exists()) dir = (await getExternalStorageDirectory())!;
-        }
-        String fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        File destinationFile = File('${dir.path}/$fileName');
-        await File(path).copy(destinationFile.path);
+      String? recordPath = await audioRecord.stop();
+      if (recordPath != null && recordPath.isNotEmpty) {
         setState(() {
           controller.recordingFalse();
-          controller.audioPath.value = destinationFile.path;
+          controller.audioPath.value = recordPath;
           debugPrint("audioPath ${controller.audioPath.value}");
           controller.addDailyDiary(widget.menuesId!.toInt());
         });
+        // Directory? dir;
+        // if (Platform.isIOS) {
+        //   dir = await getApplicationDocumentsDirectory();
+        // } else {
+        //   dir = Directory("/storage/emulated/0/Download");
+        //   if (!await dir.exists()) dir = (await getExternalStorageDirectory())!;
+        // }
+        // String fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        // File destinationFile = File('${dir.path}/$fileName');
+        // await File(path).copy(destinationFile.path);
+        // setState(() {
+        //   controller.recordingFalse();
+        //   controller.audioPath.value = destinationFile.path;
+        //   debugPrint("audioPath ${controller.audioPath.value}");
+        //   controller.addDailyDiary(widget.menuesId!.toInt());
+        // });
       }
     } catch (e) {
       debugPrint('error111111: $e');
@@ -113,9 +137,12 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
 
   Future<void> startRecording() async {
     try {
+      final fileName = path.join((await getRecordsDirectory).path,
+          'audio_${DateTime.now().millisecondsSinceEpoch}.m4a');
       if (await audioRecord.hasPermission()) {
-        // Start recording to file
-        await audioRecord.start();
+        await audioRecord.start(
+          path: fileName,
+        );
         _isTimerRunning ? null : startTimer();
         controller.recordingTrue();
       }
@@ -196,39 +223,40 @@ class _VoiceRecorderPageState extends State<VoiceRecorderPage> {
               SizedBox(
                 height: waveMaxHeight,
                 child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: amplitude.length,
-                    scrollDirection: Axis.horizontal,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemExtent: 6,
-                    itemBuilder: (context, index) {
-                      double amplitudes = amplitude[index].clamp(minimumAmp+1, 0);
-                      double ampPercentage = 1 - (amplitudes / minimumAmp).abs();
-                      double waveHeight = waveMaxHeight * ampPercentage;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                        child: Center(
-                          child: TweenAnimationBuilder(
-                              tween: Tween(begin: 0, end: waveHeight),
-                              duration: const Duration(milliseconds: 100),
-                              curve: Curves.decelerate,
-                              builder: (context, animatedWaveHeight, child){
-                                return SizedBox(
-                                  height: animatedWaveHeight.toDouble(),
-                                  width: 8,
-                                  child: child,
-                                );
-                              },
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                  controller: scrollController,
+                  itemCount: amplitude.length,
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemExtent: 6,
+                  itemBuilder: (context, index) {
+                    double amplitudes =
+                        amplitude[index].clamp(minimumAmp + 1, 0);
+                    double ampPercentage = 1 - (amplitudes / minimumAmp).abs();
+                    double waveHeight = waveMaxHeight * ampPercentage;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                      child: Center(
+                        child: TweenAnimationBuilder(
+                          tween: Tween(begin: 0, end: waveHeight),
+                          duration: const Duration(milliseconds: 100),
+                          curve: Curves.decelerate,
+                          builder: (context, animatedWaveHeight, child) {
+                            return SizedBox(
+                              height: animatedWaveHeight.toDouble(),
+                              width: 8,
+                              child: child,
+                            );
+                          },
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(

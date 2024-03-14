@@ -2,6 +2,11 @@ import 'dart:async';
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:dio/dio.dart' as dio;
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -611,27 +616,27 @@ class _DailyDiariesState extends State<DailyDiaries> {
     AudioPlayer audioPlayer = AudioPlayer();
 
     try {
-      if (url.isNotEmpty) {
-        dio.Dio dioInstance = dio.Dio();
-        dio.Response<List<int>> response = await dioInstance.get<List<int>>(
-          url,
-          options: dio.Options(responseType: dio.ResponseType.bytes),
-        );
-
-        Directory? dir;
-        if (Platform.isIOS) {
-          dir = await getApplicationDocumentsDirectory();
-        } else {
-          dir = Directory("/storage/emulated/0/Download");
-          if (!await dir.exists()) dir = (await getExternalStorageDirectory())!;
-        }
-
-        String fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        File destinationFile = File('${dir.path}/$fileName');
-
-        await destinationFile.writeAsBytes(response.data!);
-        await audioPlayer.setSourceUrl(destinationFile.path);
-      }
+      // if (url.isNotEmpty) {
+      //   dio.Dio dioInstance = dio.Dio();
+      //   dio.Response<List<int>> response = await dioInstance.get<List<int>>(
+      //     url,
+      //     options: dio.Options(responseType: dio.ResponseType.bytes),
+      //   );
+      //
+      //   Directory? dir;
+      //   if (Platform.isIOS) {
+      //     dir = await getApplicationDocumentsDirectory();
+      //   } else {
+      //     dir = Directory("/storage/emulated/0/Download");
+      //     if (!await dir.exists()) dir = (await getExternalStorageDirectory())!;
+      //   }
+      //
+      //   String fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      //   File destinationFile = File('${dir.path}/$fileName');
+      //
+      //   await destinationFile.writeAsBytes(response.data!);
+        await audioPlayer.setSourceUrl(url);
+      // }
     } catch (e) {
       print('Error downloading and copying file: $e');
       // Handle error
@@ -659,7 +664,45 @@ class _DailyDiariesState extends State<DailyDiaries> {
     super.dispose();
   }
 
-  void playPause(String url, int menuesDataId) {
+  Future<File?> downloadMp3(String url) async {
+    Dio dio = Dio();
+    Directory tempDir = await getTemporaryDirectory();
+    String fileName = url.split('/').last;
+    String savePath = '${tempDir.path}/$fileName';
+    File file = File(savePath);
+    if (await file.exists()) {
+      return file;
+    }
+
+    try {
+      EasyLoading.show(
+        status: 'Downloading...',
+      );
+      await dio.download(
+        url,
+        savePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            if (kDebugMode) {
+              print('${(received / total * 100).toStringAsFixed(0)}%');
+            }
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error downloading file: $e');
+      }
+      EasyLoading.showError('Failed to download file');
+      return null; // Return null to indicate failure
+    } finally {
+      EasyLoading.dismiss();
+    }
+
+    return File(savePath);
+  }
+
+  Future<void> playPause(String url, int menuesDataId) async {
     audioPlayer = audioPlayersMap[menuesDataId];
 
     bool isPlaying = isPlayingMap[menuesDataId] ?? false;
@@ -667,7 +710,15 @@ class _DailyDiariesState extends State<DailyDiaries> {
     if (isPlaying) {
       audioPlayer?.pause();
     } else {
-      audioPlayer?.play(UrlSource(url));
+      if (Platform.isAndroid) {
+        await audioPlayer?.play(UrlSource(url));
+      } else {
+        var file = await downloadMp3(url);
+        if (file != null) {
+          await audioPlayer?.play(DeviceFileSource(file.path));
+        }
+      }
+      // audioPlayer?.play(UrlSource(url));
     }
 
     setState(() {
