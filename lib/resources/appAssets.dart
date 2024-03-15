@@ -3,6 +3,8 @@ class AppAssets {
 
   static const String bgImage = 'assets/images/bgImage.png';
 
+  static const String removeUser = 'assets/images/remove-user.png';
+
   static const String logo = 'assets/images/logo.svg';
 
   static const String player = 'assets/images/player.svg';
