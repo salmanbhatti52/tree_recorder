@@ -112,69 +112,64 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-                RefreshIndicator(
-                  onRefresh: () async {
-                    await getParentDiaries();
-                  },
-                  child: Positioned(
-                    top: isParentTextFieldVisible || isParentSubTextFieldVisible
-                        ? 170
-                        : 100,
-                    left: 20,
-                    right: 20,
-                    child: isLoading
-                        ? const Shimmers()
-                        : parentMessage == "error"
-                            ? const SizedBox()
-                            : SizedBox(
-                                width: Get.width,
-                                height: Get.height * 0.8,
-                                child: ReorderableListView(
-                                  onReorder: (int oldIndex, int newIndex) {
-                                    setState(() {
-                                      final Map<String, dynamic> item = getPDiaries.removeAt(oldIndex);
+                Positioned(
+                  top: isParentTextFieldVisible || isParentSubTextFieldVisible
+                      ? 170
+                      : 100,
+                  left: 20,
+                  right: 20,
+                  child: isLoading
+                      ? const Shimmers()
+                      : parentMessage == "error"
+                          ? const SizedBox()
+                          : SizedBox(
+                              width: Get.width,
+                              height: Get.height * 0.8,
+                              child: ReorderableListView(
+                                onReorder: (int oldIndex, int newIndex) {
+                                  setState(() {
+                                    final Map<String, dynamic> item = getPDiaries.removeAt(oldIndex);
 
-                                      if (newIndex > oldIndex) {
-                                        newIndex -= 1;
-                                      }
+                                    if (newIndex > oldIndex) {
+                                      newIndex -= 1;
+                                    }
 
-                                      getPDiaries.insert(newIndex, item);
-                                      updateOrderApiCall(item, oldIndex, newIndex);
-                                    });
+                                    getPDiaries.insert(newIndex, item);
+                                    updateOrderApiCall(item, oldIndex, newIndex);
+                                  });
+                                },
+                                children: List.generate(
+                                  getPDiaries.length,
+                                      (index) {
+                                    var diary = getPDiaries[index]['diary'];
+                                    var hasChildren = getPDiaries[index]['has_children'];
+                                    var hasAudio = getPDiaries[index]['has_audio'];
+                                    var subDiaries = getPDiaries[index]['subdiaries'];
+                                    var parentId = diary?['menues_id'];
+                                    var menuesName = diary?['menues_name'];
+                                    var mainParentId = diary?['parent_id'];
+
+                                    if (!expansionStates.containsKey(parentId)) {
+                                      expansionStates[parentId] = false;
+                                    }
+
+                                    return ReorderableDelayedDragStartListener(
+                                      key: Key('$index'),
+                                      index: index,
+                                      child: Column(
+                                        children: [
+                                          buildDiaryItem(diary!, hasChildren, hasAudio, parentId, menuesName, 0, mainParentId),
+                                          Visibility(
+                                            visible: expansionStates[parentId]! && hasChildren == true,
+                                            child: buildNestedSubDiaries(subDiaries, 1),
+                                          ),
+                                        ],
+                                      ),
+                                    );
                                   },
-                                  children: List.generate(
-                                    getPDiaries.length,
-                                        (index) {
-                                      var diary = getPDiaries[index]['diary'];
-                                      var hasChildren = getPDiaries[index]['has_children'];
-                                      var hasAudio = getPDiaries[index]['has_audio'];
-                                      var subDiaries = getPDiaries[index]['subdiaries'];
-                                      var parentId = diary?['menues_id'];
-                                      var menuesName = diary?['menues_name'];
-                                      var mainParentId = diary?['parent_id'];
-
-                                      if (!expansionStates.containsKey(parentId)) {
-                                        expansionStates[parentId] = false;
-                                      }
-
-                                      return ReorderableDelayedDragStartListener(
-                                        key: Key('$index'),
-                                        index: index,
-                                        child: Column(
-                                          children: [
-                                            buildDiaryItem(diary!, hasChildren, hasAudio, parentId, menuesName, 0, mainParentId),
-                                            Visibility(
-                                              visible: expansionStates[parentId]! && hasChildren == true,
-                                              child: buildNestedSubDiaries(subDiaries, 1),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
                                 ),
                               ),
-                  ),
+                            ),
                 ),
                 Positioned(
                   bottom: 0,
@@ -249,14 +244,21 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              expansionStates.remove(selectedIndex);
-                            });
+                          onTap: () async {
+                              await getParentDiaries();
+                            // setState(() {
+                            //   expansionStates.remove(selectedIndex);
+                            // });
                           },
-                          child: SvgPicture.asset(
-                            AppAssets.arrowBack,
+                          child: const Icon(
+                            Icons.refresh_outlined,
+                            color: AppColor.primaryColor,
+                            size: 27,
+                            weight: 10,
                           ),
+                          // child: SvgPicture.asset(
+                          //   AppAssets.arrowBack,
+                          // ),
                         ),
                         GestureDetector(
                           onTap: () {
